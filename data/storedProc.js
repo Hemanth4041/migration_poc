@@ -1,47 +1,107 @@
 /**
- * FIRESTORE (MONGODB COMPATIBILITY) STORED PROCEDURES (CANONICAL CUSTOMER SCRIPTS)
- * Converted from Cosmos DB stored procedures.
+ * FIRESTORE (MONGODB COMPATIBILITY) STORED PROCEDURES
+ * Dynamically converted via QueryTranslationPipelinePOC + pipeline.js
  */
 
 async function RAQ_CustomReportSave_V1(collection, session, userId, title, item) {
-    try {
+try {
+
         // Step 1: Check for document count
-        const countRows = await collection.aggregate([
-            { $match: { UserId: { $eq: userId, $not: { $type: "array" } } } },
-            { $group: { _id: null, COUNT: { $sum: 1 } } },
-            { $project: { COUNT: 1, _id: 0 } }
-        ], { session }).toArray();
-        const docCount = countRows.length ? countRows[0].COUNT : 0;
-        console.log("Documents saved by current user :" + docCount + "\n");
+        
 
-        // Return 403 if the document count is greater than 500
-        if (docCount > 500) {
-            return { StatusCode: 406, Message: "User has exceeded document limit." };
+        // Translated by QueryTranslationPipelinePOC (id=RAQ_CustomReportSave_V1__countQuery, shim=UnwrapCount)
+const _countQueryRows = await collection.aggregate([
+    {
+        "$match": {
+            "UserId": {
+                "$eq": userId,
+                "$not": {
+                    "$type": "array"
+                }
+            }
         }
-
-        // Step 2: Check for duplicate title
-        const titleCountRows = await collection.aggregate([
-            { $match: { Name: { $eq: title, $not: { $type: "array" } }, UserId: { $eq: userId, $not: { $type: "array" } } } },
-            { $group: { _id: null, COUNT: { $sum: 1 } } },
-            { $project: { COUNT: 1, _id: 0 } }
-        ], { session }).toArray();
-        const titleCount = titleCountRows.length ? titleCountRows[0].COUNT : 0;
-        console.log("Documents saved with this title:" + titleCount);
-
-        // Return 409 if the title already exists
-        if (titleCount > 0) {
-            return { StatusCode: 409, Message: "Document with this title already exists." };
+    },
+    {
+        "$group": {
+            "_id": null,
+            "COUNT": {
+                "$sum": 1
+            }
         }
+    },
+    {
+        "$project": {
+            "COUNT": 1,
+            "_id": 0
+        }
+    }
+], { session }).toArray();
+const documents = [_countQueryRows.length ? _countQueryRows[0].COUNT : 0];
+const docCount = documents[0];
+                console.log("Documents saved by current user :" + docCount + "\n");
 
-        item._id = item.id; // Add _id for MongoDB
-        await collection.insertOne(item, { session });
+                // Return 403 if the document count is greater than 500
+                if (docCount > 500) {
+                    return { StatusCode: 406, Message: "User has exceeded document limit." };
+                }
 
-        // Success: Document created
-        return {
-            StatusCode: 201,
-            Message: "Document created successfully.",
-            Document: item // Echo back the item
-        };
+                // Step 2: Check for duplicate title
+                
+
+                // Translated by QueryTranslationPipelinePOC (id=RAQ_CustomReportSave_V1__titleQuery, shim=UnwrapCount)
+const _titleQueryRows = await collection.aggregate([
+    {
+        "$match": {
+            "UserId": {
+                "$eq": userId,
+                "$not": {
+                    "$type": "array"
+                }
+            },
+            "Name": {
+                "$eq": title,
+                "$not": {
+                    "$type": "array"
+                }
+            }
+        }
+    },
+    {
+        "$group": {
+            "_id": null,
+            "COUNT": {
+                "$sum": 1
+            }
+        }
+    },
+    {
+        "$project": {
+            "COUNT": 1,
+            "_id": 0
+        }
+    }
+], { session }).toArray();
+const titleDocuments = [_titleQueryRows.length ? _titleQueryRows[0].COUNT : 0];
+const titleCount = titleDocuments[0];
+
+                        console.log("Documents saved with this title:" + titleCount);
+
+                        // Return 409 if the title already exists
+                        if (titleCount > 0) {
+                            return {
+                                    StatusCode: 409,
+                                    Message: "Document with this title already exists."
+                                };
+                        }
+
+                        const createdDoc = { _id: String(item.id), ...item };
+await collection.insertOne(createdDoc, { session });
+// Success: Document created
+                                return {
+                                    StatusCode: 201,
+                                    Message: "Document created successfully.",
+                                    Document: createdDoc
+                                };
     } catch (err) {
         return {
             status: "Error",
@@ -52,43 +112,98 @@ async function RAQ_CustomReportSave_V1(collection, session, userId, title, item)
 }
 
 async function RAQ_CustomReportUpdate_V1(collection, session, id, userId, title, item) {
-    try {
-        const documents = await collection.aggregate([
-            { $match: { UserId: { $eq: userId, $not: { $type: "array" } }, id: { $eq: id, $not: { $type: "array" } } } },
-            { $project: { _id: 0 } } // Add this to remove _id
-        ], { session }).toArray();
+try {
 
-        if (documents.length < 1) {
-            return { StatusCode: 404, Message: "Document with this id not found." };
+        
+
+        // Translated by QueryTranslationPipelinePOC (id=RAQ_CustomReportUpdate_V1__itemSearchQuery, shim=None)
+const documents = await collection.aggregate([
+    {
+        "$match": {
+            "UserId": {
+                "$eq": userId,
+                "$not": {
+                    "$type": "array"
+                }
+            },
+            "id": {
+                "$eq": id,
+                "$not": {
+                    "$type": "array"
+                }
+            }
         }
-        const itemRef = documents[0];
-        console.log("Item found with id: " + itemRef.id + "\n");
+    }
+], { session }).toArray();
+if (documents.length < 1) {
+                    return { StatusCode: 404, Message: "Document with this id not found." };
+                }
 
-        // Step 1: Check for duplicate title
-        const titleCountRows = await collection.aggregate([
-            { $match: { Name: { $eq: title, $not: { $type: "array" } }, UserId: { $eq: userId, $not: { $type: "array" } }, id: { $exists: true, $ne: id } } },
-            { $group: { _id: null, COUNT: { $sum: 1 } } },
-            { $project: { COUNT: 1, _id: 0 } }
-        ], { session }).toArray();
-        const titleCount = titleCountRows.length ? titleCountRows[0].COUNT : 0;
-        console.log("Items with the same title: " + titleCount + "\n");
+                const itemRef = documents[0];
 
-        // Return 409 if the title already exists
-        if (titleCount > 0) {
-            return { StatusCode: 409, Message: "Document with this title already exists." };
+                console.log("Item found with id: " + itemRef.id + "\n");
+
+                // Step 1: Check for duplicate title
+                
+
+                // Translated by QueryTranslationPipelinePOC (id=RAQ_CustomReportUpdate_V1__titleQuery, shim=UnwrapCount)
+const _titleQueryRows = await collection.aggregate([
+    {
+        "$match": {
+            "id": {
+                "$exists": true,
+                "$ne": id
+            },
+            "UserId": {
+                "$eq": userId,
+                "$not": {
+                    "$type": "array"
+                }
+            },
+            "Name": {
+                "$eq": title,
+                "$not": {
+                    "$type": "array"
+                }
+            }
         }
+    },
+    {
+        "$group": {
+            "_id": null,
+            "COUNT": {
+                "$sum": 1
+            }
+        }
+    },
+    {
+        "$project": {
+            "COUNT": 1,
+            "_id": 0
+        }
+    }
+], { session }).toArray();
+const titleDocuments = [_titleQueryRows.length ? _titleQueryRows[0].COUNT : 0];
+const titleCount = titleDocuments[0];
 
-        // Cosmos DB replaceDocument requires _self, but Firestore uses _id for replacement
-        // Ensure the item to be replaced has the _id
-        item._id = item.id;
-        await collection.replaceOne({ _id: item.id }, { ...item }, { session }); // Use item.id for the filter
+                        console.log("Items with the same title: " + titleCount + "\n");
 
-        // Success: Document replaced
-        return {
-            StatusCode: 201,
-            Message: "Document replaced successfully.",
-            Document: item // Echo back the item
-        };
+                        // Return 409 if the title already exists
+                        if (titleCount > 0) {
+                            return {
+                                    StatusCode: 409,
+                                    Message: "Document with this title already exists."
+                                };
+                        }
+
+                        const createdDoc = { _id: String(item.id), ...item };
+await collection.replaceOne({ _id: String(itemRef.id) }, createdDoc, { session });
+// Success: Document created
+                                return {
+                                    StatusCode: 201,
+                                    Message: "Document replaced successfully.",
+                                    Document: createdDoc
+                                };
     } catch (err) {
         return {
             status: "Error",
@@ -98,10 +213,11 @@ async function RAQ_CustomReportUpdate_V1(collection, session, id, userId, title,
     }
 }
 
-async function upsertDocument(collection, session, dto, toDelete, toAdd) { // Added collection, session
-    var id = dto.id;
+async function upsertDocument(collection, session, dto, toDelete, toAdd) {
+var id = dto.id;
     var partitionKey = dto.partitionKey;
     var lastModifiedTimestamp = dto.lastModified;
+    var documentLink = (collection.collectionName || "sproc") + "/docs/" + id;
     var logs = [];
     var oldDocument = null;
 
@@ -121,8 +237,29 @@ async function upsertDocument(collection, session, dto, toDelete, toAdd) { // Ad
     addToLogs(
         `Starting the upsert process for PK: ${partitionKey}, DocId: ${id}, ToDelete: ${JSON.stringify(toDelete)}, ToAdd: ${JSON.stringify(toAdd)}`
     );
+    let document;
+try {
+    document = await collection.findOne({ _id: String(id), partitionKey: partitionKey }, { session });
+} catch (err) {
+    addErrorToLogs("Error reading document:", err);
+    addErrorToLogs(
+                        `Error reading document PK: ${partitionKey} and Document: ${documentLink}. Error: ${JSON.stringify(err)}`
+                    );
+                    return {
+                            StatusCode: 500,
+                            ErrorMessage: `Errors : [ Error reading document PK: ${partitionKey} and Document: ${documentLink}. Error: ${JSON.stringify(err)} ]`
+                        };
+}
+if (document === null) {
+    makeSureDtoHasSettingDict(dto);
+                    return await insertDocument(dto, toAdd);
+} else {
+    oldDocument = JSON.parse(JSON.stringify(document));
+                makeSureDtoHasSettingDict(dto);
+                return await patchDocument(document, dto, toDelete, toAdd);
+}
 
-    async function insertDocument(collection, session, newDto, toAdd, logs) { // Added collection, session, logs
+    async function insertDocument(newDto, toAdd) {
         addToLogs("inserting new document...");
         // Ensure DataVersion is properly assigned
         if (!newDto.dataVersion || newDto.dataVersion === "") {
@@ -140,9 +277,9 @@ async function upsertDocument(collection, session, dto, toDelete, toAdd) { // Ad
                             " is not a safe integer"
                     );
                     return {
-                        StatusCode: 500,
-                        ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
-                    };
+                            StatusCode: 500,
+                            ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
+                        };
                 }
                 newDto.dataVersion = parsedValue; // Store as a Number
             } catch (error) {
@@ -152,25 +289,25 @@ async function upsertDocument(collection, session, dto, toDelete, toAdd) { // Ad
                         " or failed to convert to js number"
                 );
                 return {
-                    StatusCode: 500,
-                    ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
-                };
+                        StatusCode: 500,
+                        ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
+                    };
             }
         }
         newDto.settings = toAdd;
-        newDto._id = newDto.id; // Add _id for MongoDB
-        await collection.insertOne(newDto, { session });
-        addToLogs("inserted new document successfully...");
-        return {
-            status: "Inserted",
-            statusCode: 200,
-            oldDocument: null, // No old document exists
-            newDocument: newDto, // New document created
-            logs: logs
-        };
+        const newDocument = { _id: String(newDto.id), ...newDto };
+await collection.insertOne(newDocument, { session });
+addToLogs("inserted new document successfully...");
+                return {
+                    status: "Inserted",
+                    statusCode: 200,
+                    oldDocument: null, // No old document exists
+                    newDocument: newDocument, // New document created
+                    logs: logs
+                };
     }
 
-    async function patchDocument(collection, session, existingDocument, newDto, toDelete, toAdd, logs) { // Added collection, session, existingDocument, logs
+    async function patchDocument(existingDocument, newDto, toDelete, toAdd) {
         addToLogs("patching new document.");
         existingDocument.lastModified = newDto.lastModified;
         // Extract existing DataVersion
@@ -191,16 +328,16 @@ async function upsertDocument(collection, session, dto, toDelete, toAdd) { // Ad
                         " is not a safe integer"
                 );
                 return {
-                    StatusCode: 500,
-                    ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
-                };
+                        StatusCode: 500,
+                        ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
+                    };
             }
             // Ensure incoming DataVersion is not lower than existing
             if (existingDataVersion !== null && incomingDataVersion < existingDataVersion) {
                 return {
-                    StatusCode: 409,
-                    ErrorMessage: `Errors : [ Incoming DataVersion ${incomingDataVersion} must be >= existing DataVersion ${existingDataVersion} ]`
-                };
+                        StatusCode: 409,
+                        ErrorMessage: `Errors : [ Incoming DataVersion ${incomingDataVersion} must be >= existing DataVersion ${existingDataVersion} ]`
+                    };
             }
             existingDocument.dataVersion = incomingDataVersion; // Store as Number
         } else {
@@ -242,40 +379,23 @@ async function upsertDocument(collection, session, dto, toDelete, toAdd) { // Ad
             }
             addToLogs("Patched settings keys with new keys.");
         }
-        existingDocument._id = existingDocument.id; // Ensure _id exists for replacement
-        await collection.replaceOne({ _id: existingDocument.id }, { ...existingDocument }, { session });
-        addToLogs("Replaced document with new document.");
-        return {
-            status: "Updated",
-            statusCode: 200,
-            oldDocument: oldDocument, // Old document before the update
-            newDocument: existingDocument, // Updated document
-            logs: logs
-        };
-    }
-
-    try {
-        const document = await collection.findOne({ _id: id, partitionKey: partitionKey }, { session });
-        if (document === null) { // Document not found
-            makeSureDtoHasSettingDict(dto);
-            return await insertDocument(collection, session, dto, toAdd, logs); // Pass dto instead of newDto
-        } else {
-            oldDocument = JSON.parse(JSON.stringify(document));
-            makeSureDtoHasSettingDict(dto);
-            return await patchDocument(collection, session, oldDocument, dto, toDelete, toAdd, logs); // Pass oldDocument and dto
-        }
-    } catch (err) {
-        addErrorToLogs("Error reading document:", err);
-        return {
-            StatusCode: 500,
-            ErrorMessage: `Errors : [ Error reading document PK: ${partitionKey} and Document: ${collection.collectionName}/docs/${id}. Error: ${JSON.stringify(err)} ]`
-        };
+        const updatedDocument = { _id: String(existingDocument.id), ...existingDocument };
+await collection.replaceOne({ _id: String(existingDocument.id) }, updatedDocument, { session });
+addToLogs("Replaced document with new document.");
+                return {
+                    status: "Updated",
+                    statusCode: 200,
+                    oldDocument: oldDocument, // Old document before the update
+                    newDocument: updatedDocument, // Updated document
+                    logs: logs
+                };
     }
 }
 
-async function deleteSettingFieldFromDocument(collection, session, dto, settingFieldsToDelete) { // Added collection, session
-    var id = dto.id;
+async function deleteSettingFieldFromDocument(collection, session, dto, settingFieldsToDelete) {
+var id = dto.id;
     var partitionKey = dto.partitionKey;
+    var documentLink = (collection.collectionName || "sproc") + "/docs/" + id;
     var logs = [];
     var oldDocument = null;
     var addToLogs = function (msg) {
@@ -295,8 +415,37 @@ async function deleteSettingFieldFromDocument(collection, session, dto, settingF
     addToLogs(
         `Starting the delete setting field process for PK: ${partitionKey}, DocId: ${id}, ToDelete: ${JSON.stringify(settingFieldsToDelete)}`
     );
-
-    async function deleteSettingField(collection, session, existingDocument, newDto, settingFieldsToDelete, logs) { // Added collection, session, existingDocument, logs
+    let document;
+try {
+    document = await collection.findOne({ _id: String(id), partitionKey: partitionKey }, { session });
+} catch (err) {
+    addErrorToLogs("Error reading document:", err);
+    addErrorToLogs(
+                        `Error reading document PK: ${partitionKey} and Document: ${documentLink}. Error: ${JSON.stringify(err)}`
+                    );
+                    return {
+                            StatusCode: 500,
+                            ErrorMessage: `Errors : [ Error reading document PK: ${partitionKey} and Document: ${documentLink}. Error: ${JSON.stringify(err)} ]`
+                        };
+}
+if (document === null) {
+    addToLogs(
+                        `Document not found for PK: ${partitionKey}, DocId: ${id}. Returning input document.`
+                    );
+                    makeSureDtoHasSettingDict(dto);
+                    return {
+                        StatusCode: 200,
+                        status: "No changes - document did not exist",
+                        oldDocument: dto,
+                        newDocument: dto,
+                        logs: logs
+                    };
+} else {
+    oldDocument = JSON.parse(JSON.stringify(document));
+                makeSureDtoHasSettingDict(dto);
+                return await deleteSettingField(document, dto, settingFieldsToDelete);
+}
+    async function deleteSettingField(existingDocument, newDto, settingFieldsToDelete) {
         addToLogs("Finding if requested setting fields to be deleted exist in the document");
         var missingKeys = [];
         settingFieldsToDelete.forEach(function (key) {
@@ -313,13 +462,13 @@ async function deleteSettingFieldFromDocument(collection, session, dto, settingF
                     `Aborting delete: Missing settings found for keys: ${missingKeys.join(", ")}`
                 );
                 return {
-                    StatusCode: 404,
-                    ErrorMessage: `Errors : [ No settings found for : ${missingKeys.join(", ")} ]`
-                };
+                        StatusCode: 404,
+                        ErrorMessage: `Errors : [ No settings found for : ${missingKeys.join(", ")} ]`
+                    };
             }
         } catch (err) {
             addErrorToLogs(`printing err message ${err}`);
-            throw err.message; // Re-throw the message as per original logic
+            throw err.message;
         }
         // Extract existing DataVersion
         let existingDataVersion =
@@ -338,17 +487,17 @@ async function deleteSettingFieldFromDocument(collection, session, dto, settingF
                         " is either not a safe integer or is less than zero"
                 );
                 return {
-                    StatusCode: 500,
-                    ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
-                };
+                        StatusCode: 500,
+                        ErrorMessage: `Errors : [ Invalid DataVersion input ${newDto.dataVersion}]`
+                    };
             }
             // Ensure incoming DataVersion is not lower than existing
             if (existingDataVersion !== null && incomingDataVersion < existingDataVersion) {
                 addErrorToLogs("Incoming DataVersion must be >= existing DataVersion.");
                 return {
-                    StatusCode: 409,
-                    ErrorMessage: `Errors : [ Incoming DataVersion ${incomingDataVersion} must be >= existing DataVersion ${existingDataVersion} ]`
-                };
+                        StatusCode: 409,
+                        ErrorMessage: `Errors : [ Incoming DataVersion ${incomingDataVersion} must be >= existing DataVersion ${existingDataVersion} ]`
+                    };
             }
             existingDocument.dataVersion = incomingDataVersion; // Store as Number
         } else {
@@ -366,43 +515,16 @@ async function deleteSettingFieldFromDocument(collection, session, dto, settingF
             });
             addToLogs("Deleted specified setting fields successfully.");
         }
-        existingDocument._id = existingDocument.id; // Ensure _id exists for replacement
-        await collection.replaceOne({ _id: existingDocument.id }, { ...existingDocument }, { session });
-        addToLogs("Replaced document with new document.");
-        return {
-            status: "Updated",
-            StatusCode: 200,
-            oldDocument: oldDocument, // Old document before the update
-            newDocument: existingDocument, // Updated document
-            logs: logs
-        };
-    }
-
-    try {
-        const document = await collection.findOne({ _id: id, partitionKey: partitionKey }, { session });
-        if (document === null) { // Document not found
-            addToLogs(
-                `Document not found for PK: ${partitionKey}, DocId: ${id}. Returning input document.`
-            );
-            makeSureDtoHasSettingDict(dto);
-            return {
-                StatusCode: 200,
-                status: "No changes - document did not exist",
-                oldDocument: dto,
-                newDocument: dto,
-                logs: logs
-            };
-        } else {
-            oldDocument = JSON.parse(JSON.stringify(document));
-            makeSureDtoHasSettingDict(dto);
-            return await deleteSettingField(collection, session, oldDocument, dto, settingFieldsToDelete, logs);
-        }
-    } catch (err) {
-        addErrorToLogs("Error reading document:", err);
-        return {
-            StatusCode: 500,
-            ErrorMessage: `Errors : [ Error reading document PK: ${partitionKey} and Document: ${collection.collectionName}/docs/${id}. Error: ${JSON.stringify(err)} ]`
-        };
+        const updatedDocument = { _id: String(existingDocument.id), ...existingDocument };
+await collection.replaceOne({ _id: String(existingDocument.id) }, updatedDocument, { session });
+addToLogs("Replaced document with new document.");
+                return {
+                    status: "Updated",
+                    StatusCode: 200,
+                    oldDocument: oldDocument, // Old document before the update
+                    newDocument: updatedDocument, // Updated document
+                    logs: logs
+                };
     }
 }
 
