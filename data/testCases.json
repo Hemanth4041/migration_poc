@@ -1,0 +1,282 @@
+[
+  {
+    "name": "RAQ_CustomReportSave_V1 - Success (inserts report)",
+    "proc": "RAQ_CustomReportSave_V1",
+    "collection": "reports",
+    "seed": [],
+    "args": [
+      "user_100",
+      "Q1 Revenue Report",
+      {
+        "id": "rep_1",
+        "UserId": "user_100",
+        "Name": "Q1 Revenue Report",
+        "AccountId": "acc_1"
+      }
+    ]
+  },
+  {
+    "name": "RAQ_CustomReportSave_V1 - Rejects duplicate title (titleCount > 0)",
+    "proc": "RAQ_CustomReportSave_V1",
+    "collection": "reports",
+    "seed": [
+      {
+        "id": "rep_existing",
+        "UserId": "user_100",
+        "Name": "Q1 Revenue Report",
+        "AccountId": "acc_1"
+      }
+    ],
+    "args": [
+      "user_100",
+      "Q1 Revenue Report",
+      {
+        "id": "rep_2",
+        "UserId": "user_100",
+        "Name": "Q1 Revenue Report",
+        "AccountId": "acc_1"
+      }
+    ]
+  },
+  {
+    "name": "RAQ_CustomReportSave_V1 - Rejects when user exceeds 500 saved reports",
+    "proc": "RAQ_CustomReportSave_V1",
+    "collection": "reports",
+    "seedGenerator": {
+      "count": 501,
+      "idPrefix": "rep_",
+      "UserId": "user_limit",
+      "NamePrefix": "Report "
+    },
+    "args": [
+      "user_limit",
+      "Report 502",
+      {
+        "id": "rep_502",
+        "UserId": "user_limit",
+        "Name": "Report 502",
+        "AccountId": "acc_1"
+      }
+    ]
+  },
+  {
+    "name": "RAQ_CustomReportUpdate_V1 - Success (updates existing report)",
+    "proc": "RAQ_CustomReportUpdate_V1",
+    "collection": "reports",
+    "seed": [
+      {
+        "id": "rep_10",
+        "UserId": "user_200",
+        "Name": "Old Name",
+        "AccountId": "acc_2"
+      }
+    ],
+    "args": [
+      "rep_10",
+      "user_200",
+      "Updated Name",
+      {
+        "id": "rep_10",
+        "UserId": "user_200",
+        "Name": "Updated Name",
+        "AccountId": "acc_2"
+      }
+    ]
+  },
+  {
+    "name": "RAQ_CustomReportUpdate_V1 - Rejects when another report has same title",
+    "proc": "RAQ_CustomReportUpdate_V1",
+    "collection": "reports",
+    "seed": [
+      {
+        "id": "rep_10",
+        "UserId": "user_200",
+        "Name": "Original Name",
+        "AccountId": "acc_2"
+      },
+      {
+        "id": "rep_11",
+        "UserId": "user_200",
+        "Name": "Taken Title",
+        "AccountId": "acc_2"
+      }
+    ],
+    "args": [
+      "rep_10",
+      "user_200",
+      "Taken Title",
+      {
+        "id": "rep_10",
+        "UserId": "user_200",
+        "Name": "Taken Title",
+        "AccountId": "acc_2"
+      }
+    ]
+  },
+  {
+    "name": "RAQ_CustomReportUpdate_V1 - Returns 404 when report id does not exist",
+    "proc": "RAQ_CustomReportUpdate_V1",
+    "collection": "reports",
+    "seed": [],
+    "args": [
+      "rep_missing",
+      "user_200",
+      "Updated Name",
+      {
+        "id": "rep_missing",
+        "UserId": "user_200",
+        "Name": "Updated Name",
+        "AccountId": "acc_2"
+      }
+    ]
+  },
+  {
+    "name": "upsertDocument - Inserts new document when id not found (404 branch)",
+    "proc": "upsertDocument",
+    "collection": "settings",
+    "seed": [],
+    "args": [
+      {
+        "id": "doc_1",
+        "partitionKey": "pk_1",
+        "lastModified": "2026-10-22T00:00:00Z",
+        "dataVersion": 1
+      },
+      [],
+      {
+        "theme": "dark",
+        "notifications": true
+      }
+    ]
+  },
+  {
+    "name": "upsertDocument - Patches existing document when incomingDataVersion >= existingDataVersion",
+    "proc": "upsertDocument",
+    "collection": "settings",
+    "seed": [
+      {
+        "id": "doc_1",
+        "partitionKey": "pk_1",
+        "lastModified": "2026-10-21T00:00:00Z",
+        "dataVersion": 2,
+        "settings": {
+          "theme": "light",
+          "lang": "en"
+        },
+        "settingsLastModified": {
+          "theme": "2026-10-21T00:00:00Z",
+          "lang": "2026-10-21T00:00:00Z"
+        }
+      }
+    ],
+    "args": [
+      {
+        "id": "doc_1",
+        "partitionKey": "pk_1",
+        "lastModified": "2026-10-22T00:00:00Z",
+        "dataVersion": 3
+      },
+      ["lang"],
+      {
+        "theme": "dark",
+        "timezone": "UTC"
+      }
+    ]
+  },
+  {
+    "name": "upsertDocument - Rejects stale update (409 Conflict when incomingDataVersion < existingDataVersion)",
+    "proc": "upsertDocument",
+    "collection": "settings",
+    "seed": [
+      {
+        "id": "doc_1",
+        "partitionKey": "pk_1",
+        "lastModified": "2026-10-21T00:00:00Z",
+        "dataVersion": 5,
+        "settings": {
+          "theme": "light"
+        },
+        "settingsLastModified": {
+          "theme": "2026-10-21T00:00:00Z"
+        }
+      }
+    ],
+    "args": [
+      {
+        "id": "doc_1",
+        "partitionKey": "pk_1",
+        "lastModified": "2026-10-22T00:00:00Z",
+        "dataVersion": 3
+      },
+      [],
+      {
+        "theme": "dark"
+      }
+    ]
+  },
+  {
+    "name": "upsertDocument - Rejects non-integer dataVersion (400 Bad Request)",
+    "proc": "upsertDocument",
+    "collection": "settings",
+    "seed": [],
+    "args": [
+      {
+        "id": "doc_bad",
+        "partitionKey": "pk_1",
+        "lastModified": "2026-10-22T00:00:00Z",
+        "dataVersion": "invalid_version"
+      },
+      [],
+      {
+        "theme": "dark"
+      }
+    ]
+  },
+  {
+    "name": "deleteSettingFieldFromDocument - Deletes specified keys and patches remaining settings",
+    "proc": "deleteSettingFieldFromDocument",
+    "collection": "settings",
+    "seed": [
+      {
+        "id": "doc_del_1",
+        "partitionKey": "pk_del",
+        "lastModified": "2026-10-21T00:00:00Z",
+        "dataVersion": 2,
+        "settings": {
+          "theme": "dark",
+          "obsoleteKey": "remove_me",
+          "lang": "en"
+        },
+        "settingsLastModified": {
+          "theme": "2026-10-21T00:00:00Z",
+          "obsoleteKey": "2026-10-21T00:00:00Z",
+          "lang": "2026-10-21T00:00:00Z"
+        }
+      }
+    ],
+    "args": [
+      {
+        "id": "doc_del_1",
+        "partitionKey": "pk_del",
+        "lastModified": "2026-10-22T00:00:00Z",
+        "dataVersion": 3
+      },
+      ["obsoleteKey"]
+    ]
+  },
+  {
+    "name": "deleteSettingFieldFromDocument - Inserts document when not found (404 branch)",
+    "proc": "deleteSettingFieldFromDocument",
+    "collection": "settings",
+    "seed": [],
+    "args": [
+      {
+        "id": "doc_del_new",
+        "partitionKey": "pk_del",
+        "lastModified": "2026-10-22T00:00:00Z",
+        "dataVersion": 1
+      },
+      ["nonExistentKey"]
+    ]
+  }
+]
